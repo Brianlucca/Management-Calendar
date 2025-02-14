@@ -128,17 +128,20 @@ const TaskModal = ({
                         <input
                           type="checkbox"
                           checked={selectedTags.includes(tag.id)}
-                          onChange={() =>
-                            setSelectedTags((prev) =>
-                              prev.includes(tag.id)
-                                ? prev.filter((id) => id !== tag.id)
-                                : [...prev, tag.id]
-                            )
-                          }
+                          onChange={(e) => {
+                            const isChecked = e.target.checked;
+                            setSelectedTags((prevTags) => {
+                              if (isChecked) {
+                                return [...prevTags, tag.id];
+                              } else {
+                                return prevTags.filter((id) => id !== tag.id);
+                              }
+                            });
+                          }}
                           className="hidden"
                         />
                         <span
-                          className={`px-3 py-1 rounded-full text-sm cursor-pointer transition-all ${
+                          className={`px-3 py-1 rounded-md text-white text-sm cursor-pointer transition-all ${
                             selectedTags.includes(tag.id)
                               ? "opacity-100"
                               : "opacity-50 hover:opacity-75"
