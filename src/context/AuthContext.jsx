@@ -1,12 +1,15 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { auth, firestore } from "../service/FirebaseConfig";
-import {
-  createUserWithEmailAndPassword,
+import { 
+  onAuthStateChanged, 
+  signOut, 
+  createUserWithEmailAndPassword, 
   signInWithEmailAndPassword,
-  signOut,
-  onAuthStateChanged,
+  sendEmailVerification
 } from "firebase/auth";
-import { doc, setDoc } from "firebase/firestore";
+import { auth, firestore } from "../service/FirebaseConfig";
+import { useNavigate } from "react-router-dom";
+import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
+import { setupAuthStateListener } from "../service/AuthService/AuthService";
 
 const AuthContext = createContext();
 
@@ -16,68 +19,124 @@ export function useAuth() {
 
 export function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
+  const [userRole, setUserRole] = useState(null);
   const [loading, setLoading] = useState(true);
-
-  const signUp = async (email, password, name, gender) => {
-    try {
-      const userCredential = await createUserWithEmailAndPassword(
-        auth,
-        email,
-        password
-      );
-      const user = userCredential.user;
-
-      await setDoc(doc(firestore, "users", user.uid), {
-        name,
-        email,
-        gender,
-        createdAt: new Date().toISOString(),
-      });
-
-      return user;
-    } catch (error) {
-      console.error("Erro ao cadastrar:", error);
-      throw error;
-    }
-  };
-
-  const signIn = async (email, password) => {
-    try {
-      const userCredential = await signInWithEmailAndPassword(
-        auth,
-        email,
-        password
-      );
-      return userCredential.user;
-    } catch (error) {
-      console.error("Erro ao fazer login:", error);
-      throw error;
-    }
-  };
-
-  const logout = async () => {
-    try {
-      await signOut(auth);
-    } catch (error) {
-      console.error("Erro ao fazer logout:", error);
-      throw error;
-    }
-  };
+  const navigate = useNavigate();
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setCurrentUser(user);
+    const unsubscribeAuthListener = setupAuthStateListener();
+
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        setCurrentUser(null);
+        setUserRole(null);
+        setLoading(false);
+        navigate("/signin");
+        return;
+      }
+
+      try {
+        const userDoc = await getDoc(doc(firestore, "users", user.uid));
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+
+          if (user.emailVerified && !userData.isActive) {
+            await updateDoc(doc(firestore, "users", user.uid), {
+              isActive: true,
+              emailVerified: true
+            });
+          }
+
+          if (!userData.isActive) {
+            await signOut(auth);
+            navigate("/signin");
+            return;
+          }
+
+          setUserRole(userData.role);
+          setCurrentUser(user);
+
+          if (userData.role === "administrador") {
+            console.log("Usuário é administrador");
+          } else if (userData.role === "funcionario") {
+            console.log("Usuário é funcionário");
+          } else {
+            console.log("Usuário é usuário");
+          }
+        } else {
+          await signOut(auth);
+          navigate("/signin");
+        }
+      } catch (error) {
+        console.error("Erro ao buscar role do usuário:", error);
+        await signOut(auth);
+        navigate("/signin");
+      }
+
       setLoading(false);
     });
 
-    return unsubscribe;
-  }, []);
+    return () => {
+      unsubscribeAuthListener();
+      unsubscribe();
+    }
+  }, [navigate]);
 
   const value = {
     currentUser,
-    signUp,
-    signIn,
-    logout,
+    userRole,
+    loading,
+    signUp: async (email, password, name, role, color) => {
+      try {
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+
+        await sendEmailVerification(user);
+
+        await setDoc(doc(firestore, "users", user.uid), {
+          name,
+          email,
+          role,
+          color,
+          createdAt: new Date().toISOString(),
+          isActive: false,
+          emailVerified: false
+        });
+
+        return user;
+      } catch (error) {
+        console.error("Erro ao cadastrar:", error);
+        throw error;
+      }
+    },
+    signIn: async (email, password) => {
+      try {
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+
+        if (!user.emailVerified) {
+          throw new Error("Conta não ativada. Verifique seu e-mail.");
+        }
+
+        const userDoc = await getDoc(doc(firestore, "users", user.uid));
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+
+          return { user, role: userData.role };
+        } else {
+          throw new Error("Usuário não encontrado no Firestore.");
+        }
+      } catch (error) {
+        console.error("Erro ao fazer login:", error);
+        throw error;
+      }
+    },
+    logout: async () => {
+      await signOut(auth);
+      setCurrentUser(null);
+      setUserRole(null);
+      navigate("/signin");
+    },
   };
 
   return (
@@ -86,3 +145,5 @@ export function AuthProvider({ children }) {
     </AuthContext.Provider>
   );
 }
+
+export { AuthContext };
