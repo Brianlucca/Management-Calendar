@@ -16,12 +16,13 @@
     "@fullcalendar/react": "^6.1.15",
     "@fullcalendar/timegrid": "^6.1.15",
     "firebase": "^11.2.0",
+    "flowbite": "^3.1.1",
     "fullcalendar": "^6.1.15",
     "lucide": "^0.473.0",
+    "lucide-react": "^0.475.0",
     "moment": "^2.30.1",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1",
-    "rsuite": "^5.76.3"
+    "react-dom": "^18.3.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.17.0",
