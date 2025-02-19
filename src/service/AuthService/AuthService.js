@@ -109,3 +109,12 @@ export const logout = async () => {
     throw error;
   }
 };
+
+export const getNextTaskId = async () => {
+  const counterRef = doc(firestore, 'counters', 'tasks');
+  const snapshot = await get(counterRef);
+  let count = snapshot.exists() ? snapshot.data().count : 0;
+  count++;
+  await updateDoc(counterRef, { count });
+  return count;
+}
