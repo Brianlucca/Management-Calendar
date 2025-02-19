@@ -58,10 +58,10 @@ export function AuthProvider({ children }) {
 
           if (userData.role === "administrador") {
             console.log("Usuário é administrador");
-          } else if (userData.role === "funcionario") {
-            console.log("Usuário é funcionário");
+          } else if (userData.role === "coordenador") {
+            console.log("Usuário é coordenador");
           } else {
-            console.log("Usuário é usuário");
+            console.log("Usuário é usuário comum");
           }
         } else {
           await signOut(auth);
