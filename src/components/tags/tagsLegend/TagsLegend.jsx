@@ -11,7 +11,7 @@ const TagsLegend = ({ onTagDelete }) => {
   const [selectedTags, setSelectedTags] = useState([]);
 
   useEffect(() => {
-    const tagsRef = ref(db, "calendar/tags");
+    const tagsRef = ref(db, "/tags");
     onValue(tagsRef, (snapshot) => {
       const data = snapshot.val();
       if (data) {
@@ -36,7 +36,7 @@ const TagsLegend = ({ onTagDelete }) => {
     if (currentUser && selectedTags.length > 0) {
       try {
         await Promise.all(
-          selectedTags.map(tagId => remove(ref(db, `calendar/tags/${tagId}`)))
+          selectedTags.map(tagId => remove(ref(db, `tags/${tagId}`)))
         );
         onTagDelete(selectedTags);
         setSelectedTags([]);
