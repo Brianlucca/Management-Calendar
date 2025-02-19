@@ -22,14 +22,14 @@ export const NotificationProvider = ({ children }) => {
     <NotificationContext.Provider value={{ showNotification }}>
       {children}
       {notification && (
-        <div className={`notification ${notification.type}`}>
+        <main className={`notification ${notification.type}`}>
           <div className="notification-content">
             {notification.type === 'error' && (
               <span className="notification-icon">⚠️</span>
             )}
             {notification.message}
           </div>
-        </div>
+        </main>
       )}
     </NotificationContext.Provider>
   );
