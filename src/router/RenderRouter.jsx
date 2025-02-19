@@ -7,6 +7,7 @@ import PrivateLayout from "./privateLayout/PrivateLayout";
 import Admin from "../pages/admin/Admin";
 import AdminRoute from "./adminRoute/AdminRoute";
 import TagsPage from "../pages/tagsPage/TagsPage";
+import Profile from "../pages/profile/Profile";
 
 function RenderRouter() {
   return (
@@ -36,6 +37,16 @@ function RenderRouter() {
           <PrivateRoute>
             <PrivateLayout>
               <Dashboard />
+            </PrivateLayout>
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/profile"
+        element={
+          <PrivateRoute>
+            <PrivateLayout>
+              <Profile />
             </PrivateLayout>
           </PrivateRoute>
         }
