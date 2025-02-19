@@ -6,9 +6,9 @@ const TagsPage = () => {
   const [tags, setTags] = useState([]);
 
   const handleTagCreate = (newTag) => {
-    setTags([...tags, newTag]);
+    setTags(prev => [...prev, newTag]);
   };
-
+  
   const handleTagDelete = (deletedTags) => {
     setTags(tags.filter(tag => !deletedTags.includes(tag.id)));
   };
