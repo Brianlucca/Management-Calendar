@@ -12,26 +12,36 @@ const TagsManager = ({ onTagCreate }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (currentUser) {
-      const newTag = { name: tagName, color: tagColor, createdBy: currentUser.email };
+      const newTag = {
+        name: tagName,
+        color: tagColor,
+        createdBy: currentUser.email,
+        createdByUid: currentUser.uid,
+        createdAt: new Date().toISOString()
+      };
       try {
-        await push(ref(db, `calendar/tags`), newTag);
-        onTagCreate(newTag);
+        const tagRef = await push(ref(db, 'tags'), newTag);
+
+        onTagCreate({
+          ...newTag,
+          id: tagRef.key
+        });
+
         setTagName("");
       } catch (error) {
         console.error("Erro ao salvar tag:", error);
       }
     }
   };
-
   return (
     <div className="bg-white p-6 rounded-xl shadow-lg border">
-      <h2 className="text-2xl font-semibold mb-5 text-gray-800 flex items-center">
-        <Palette className="mr-2" /> Criar Nova Tag
+      <h2 className="text-2xl font-semibold mb-5 text-gray-800 flex items-center text-center justify-center">
+        Gerenciador de Tags
       </h2>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-gray-600 font-medium mb-1 flex items-center">
-            <Tag className="mr-2" /> Nome da Tag
+          <label className="text-gray-600 font-medium mb-1 flex items-center">
+            Nome da Tag
           </label>
           <input
             type="text"
@@ -44,8 +54,8 @@ const TagsManager = ({ onTagCreate }) => {
         </div>
 
         <div>
-          <label className="block text-gray-600 font-medium mb-1 flex items-center">
-            <Palette className="mr-2" /> Cor da Tag
+          <label className="text-gray-600 font-medium mb-1 flex items-center">
+            Cor da Tag
           </label>
           <input
             type="color"
