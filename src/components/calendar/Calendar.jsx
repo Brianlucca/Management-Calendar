@@ -4,7 +4,7 @@ import dayGridPlugin from "@fullcalendar/daygrid";
 import timeGridPlugin from "@fullcalendar/timegrid";
 import interactionPlugin from "@fullcalendar/interaction";
 import listPlugin from "@fullcalendar/list";
-import { ref, push, onValue, update } from "firebase/database";
+import { ref, push, onValue, update, get } from "firebase/database";
 import { db } from "../../service/FirebaseConfig";
 import { useAuth } from "../../context/AuthContext";
 import TaskModal from "./taskModal/TaskModal";
@@ -15,40 +15,50 @@ moment.locale("pt-br");
 
 const Calendar = () => {
   const [events, setEvents] = useState([]);
+  const [users, setUsers] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState("");
   const [selectedTask, setSelectedTask] = useState(null);
   const [isEditMode, setIsEditMode] = useState(false);
   const [tags, setTags] = useState([]);
-  const { currentUser } = useAuth();
+  const { currentUser, userRole } = useAuth();
+
+  const getNextTaskId = async () => {
+    const counterRef = ref(db, "counters/tasks");
+    const snapshot = await get(counterRef);
+    let count = snapshot.val()?.count || 0;
+    count++;
+    await update(counterRef, { count });
+    return count;
+  };
 
   useEffect(() => {
     const tasksRef = ref(db, "calendar/tasks");
     onValue(tasksRef, (snapshot) => {
       const data = snapshot.val();
-      if (data) {
-        const loadedTasks = Object.keys(data).map((key) => ({
-          id: key,
-          ...data[key],
-        }));
-        setEvents(loadedTasks);
-      }
+      const loadedTasks = data ? Object.keys(data).map((key) => ({ id: key, ...data[key] })) : [];
+      setEvents(loadedTasks);
     });
-  }, []);
 
-  useEffect(() => {
+    const usersRef = ref(db, "users");
+    onValue(usersRef, (snapshot) => {
+      const data = snapshot.val();
+      const loadedUsers = data ? Object.keys(data).map((key) => ({ uid: key, ...data[key] })) : [];
+      setUsers(loadedUsers);
+    });
+
     const tagsRef = ref(db, "tags");
     onValue(tagsRef, (snapshot) => {
       const data = snapshot.val();
       if (data) {
-        const loadedTags = Object.keys(data).map((key) => ({
+        const tagsArray = Object.keys(data).map(key => ({
           id: key,
-          ...data[key],
+          ...data[key]
         }));
-        setTags(loadedTags);
+        setTags(tagsArray);
       }
     });
-  }, []);
+  }, []); // Fechamento correto do useEffect
 
   const handleDateClick = (arg) => {
     setSelectedDate(arg.dateStr);
@@ -58,42 +68,64 @@ const Calendar = () => {
   };
 
   const handleEventClick = (info) => {
-    setSelectedTask({
-      id: info.event.id,
-      title: info.event.title,
-      startDate: info.event.start,
-      endDate: info.event.end,
-      description: info.event.extendedProps.description,
-      tags: info.event.extendedProps.tags,
-      createdBy: info.event.extendedProps.createdBy,
-    });
-    setIsEditMode(false);
+    const canEdit = userRole === "administrador" || currentUser.uid === info.event.extendedProps.createdByUid;
+    setSelectedTask({ ...info.event.extendedProps, id: info.event.id, canEdit });
     setIsModalOpen(true);
   };
 
-  const handleTaskSubmit = (task) => {
-    const newTask = {
-      ...task,
-      createdBy: currentUser.email,
-      tags: task.tags?.filter((tag) => tag !== undefined) || [],
-    };
+  const handleTaskSubmit = async (task) => {
+    try {
+      const now = new Date().toISOString();
+      const originalTask = selectedTask || {};
+      const changes = trackChanges(originalTask, task);
 
-    if (isEditMode && selectedTask) {
-      update(ref(db, `calendar/tasks/${selectedTask.id}`), newTask)
-        .then(() => console.log("Tarefa atualizada!"))
-        .catch((error) => console.error("Erro ao atualizar:", error));
-    } else {
-      push(ref(db, "calendar/tasks"), newTask)
-        .then(() => console.log("Tarefa criada!"))
-        .catch((error) => console.error("Erro ao criar:", error));
+      const editEntry = {
+        user: currentUser.email,
+        timestamp: now,
+        changes,
+      };
+
+      console.log("Tags sendo enviadas:", task.tags);
+
+      const newTask = {
+        ...task,
+        status: task.status || "pendente",
+        createdBy: currentUser.email,
+        createdByUid: currentUser.uid,
+        updatedAt: now,
+        editHistory: [...(originalTask.editHistory || []), editEntry],
+        tags: task.tags.filter(tag => typeof tag === 'string'), ...(!selectedTask && { taskId: await getNextTaskId(), createdAt: now }),
+      };
+
+      if (selectedTask) {
+        await update(ref(db, `calendar/tasks/${selectedTask.id}`), newTask);
+      } else {
+        await push(ref(db, "calendar/tasks"), newTask);
+      }
+      setIsModalOpen(false);
+    } catch (error) {
+      console.error("Erro ao salvar tarefa:", error);
     }
-    setIsModalOpen(false);
   };
 
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
-    setIsEditMode(false);
-    setSelectedTask(null);
+  const trackChanges = (original, updated) => {
+    const changes = {};
+    Object.keys(updated).forEach((key) => {
+      const originalValue = original[key] || "vazio";
+      const updatedValue = updated[key] || "vazio";
+
+      if (key === "tags") {
+        const originalTags = Array.isArray(originalValue) ? originalValue.filter(tag => tag !== undefined) : [];
+        const updatedTags = Array.isArray(updatedValue) ? updatedValue.filter(tag => tag !== undefined) : [];
+
+        if (JSON.stringify(originalTags) !== JSON.stringify(updatedTags)) {
+          changes[key] = { from: originalTags, to: updatedTags };
+        }
+      } else if (JSON.stringify(originalValue) !== JSON.stringify(updatedValue)) {
+        changes[key] = { from: originalValue, to: updatedValue };
+      }
+    });
+    return changes;
   };
 
   return (
@@ -101,33 +133,47 @@ const Calendar = () => {
       <div className="w-full md:max-w-5xl">
         <div className="rounded-xl shadow-sm border overflow-hidden bg-white border-gray-200 w-full md:p-4 mb-6">
           <FullCalendar
-            className="p-4"
-            plugins={[
-              dayGridPlugin,
-              timeGridPlugin,
-              interactionPlugin,
-              listPlugin,
-            ]}
+            plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin, listPlugin]}
             initialView="dayGridMonth"
             locale="pt-br"
-            events={events.map((event) => ({
-              id: event.id,
-              title: event.title,
-              start: event.startDate,
-              end: event.endDate,
-              extendedProps: {
-                description: event.description,
-                tags: event.tags,
-                createdBy: event.createdBy,
-              },
-              color:
-                event.tags?.length > 0
-                  ? event.tags[0].color
-                  : "#3B82F6",
-            }))}
+            events={events.map((event) => {
+              const user = users.find((u) => u.uid === event.createdByUid);
+              const eventTags = tags.filter(tag => event.tags?.includes(tag.id));
+              const tagColor = eventTags.length > 0 ? eventTags[0].color : null;
+
+              const isTimedEvent = event.startDate.includes('T') || event.endDate.includes('T');
+              let endDate = event.endDate;
+
+              if (!isTimedEvent && moment(event.endDate).isSame(event.startDate, 'day')) {
+                endDate = moment(event.endDate).add(1, 'day').format('YYYY-MM-DD');
+              }
+
+              return {
+                id: event.id,
+                title: `#${event.taskId} - ${event.title}`,
+                start: event.startDate,
+                end: endDate,
+                backgroundColor: event.status === "concluida" ? "#10B981" : tagColor || user?.color || "#3B82F6",
+                borderColor: event.status === "concluida" ? "#10B981" : tagColor || user?.color || "#3B82F6",
+                extendedProps: { ...event, canEdit: userRole === "administrador" || currentUser.uid === event.createdByUid },
+              };
+            })}
             dateClick={handleDateClick}
             eventClick={handleEventClick}
-            headerToolbar={{
+            eventContent={(arg) => (
+              <div className="p-1" style={{
+                maxWidth: '100%',
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap'
+              }}>
+                <div className="flex flex-col gap-1">
+                  <span className="text-sm font-medium">
+                    {arg.event.title}
+                  </span>
+                </div>
+              </div>
+            )} headerToolbar={{
               left: "prev,next today",
               center: "title",
               right: "dayGridMonth,timeGridWeek,timeGridDay,listMonth",
@@ -139,42 +185,26 @@ const Calendar = () => {
               day: "Dia",
               list: "Lista",
             }}
-            views={{
-              listMonth: {
-                type: "listMonth",
-                duration: { months: 12 },
-                buttonText: "Lista",
-              },
-              dayGridMonth: {
-                type: "dayGridMonth",
-                buttonText: "Mês",
-              },
-              timeGridWeek: {
-                type: "timeGridWeek",
-                buttonText: "Semana",
-              },
-              timeGridDay: {
-                type: "timeGridDay",
-                buttonText: "Dia",
-              },
-            }}
-            height="auto"
-            themeSystem="standard"
-            contentHeight="auto"
-            eventLimit={true}
           />
         </div>
       </div>
 
       <TaskModal
         isOpen={isModalOpen}
-        onClose={handleCloseModal}
+        onClose={() => {
+          setIsModalOpen(false);
+          setSelectedTask(null);
+          setIsEditMode(false);
+        }}
         onSubmit={handleTaskSubmit}
         tags={tags}
+        users={users}
         selectedDate={selectedDate}
         selectedTask={selectedTask}
         isEditMode={isEditMode}
-        onEdit={() => setIsEditMode(true)}
+        userRole={userRole}
+        currentUser={currentUser}
+        setIsEditMode={setIsEditMode}
       />
     </div>
   );
