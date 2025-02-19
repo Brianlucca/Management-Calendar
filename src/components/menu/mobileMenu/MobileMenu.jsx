@@ -34,7 +34,7 @@ const MobileMenu = () => {
   };
 
   return (
-    <div className="z-50 flex fixed top-0 left-0 w-full bg-gray-900 text-white p-4">
+    <main className="z-50 flex fixed top-0 left-0 w-full bg-gray-900 text-white p-4">
       <nav className="w-full">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
@@ -91,7 +91,7 @@ const MobileMenu = () => {
           </ul>
         )}
       </nav>
-    </div>
+    </main>
   );
 };
 

@@ -18,7 +18,7 @@ const Sidebar = () => {
   };
 
   return (
-    <div className={`z-50 flex fixed top-0 left-0 h-full ${isOpen ? "w-64" : "w-20"} bg-gray-900 text-white p-4 transition-all duration-300`}> 
+    <main className={`z-50 flex fixed top-0 left-0 h-full ${isOpen ? "w-64" : "w-20"} bg-gray-900 text-white p-4 transition-all duration-300`}>
       <nav className="w-full h-full flex flex-col">
         <button 
           onClick={() => setIsOpen(!isOpen)} 
@@ -68,7 +68,7 @@ const Sidebar = () => {
           </li>
         </ul>
       </nav>
-    </div>
+    </main>
   );
 };
 
