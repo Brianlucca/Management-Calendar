@@ -1,33 +1,31 @@
-import React from "react";
+import React, { useContext } from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Dashboard from "../pages/dashboard/Dashboard";
-import SignIn from "../pages/auth/SignIn";
+import SignIn from "../pages/auth/signIn/SignIn";
 import PrivateRoute from "./privateRoute/PrivateRoute";
 import PrivateLayout from "./privateLayout/PrivateLayout";
-import Admin from "../pages/admin/Admin";
-import AdminRoute from "./adminRoute/AdminRoute";
 import TagsPage from "../pages/tagsPage/TagsPage";
+import Profile from "../pages/profile/Profile";
+import SignUp from "../pages/auth/signUp/SignUp";
+import VerifyEmail from "../pages/auth/verifyEmail/VerifyEmail";
+import NotFoundPage from "../pages/notFoundPage/NotFoundPage";
 
 function RenderRouter() {
+
   return (
     <Routes>
       <Route path="/signin" element={<SignIn />} />
+      <Route path="/signup" element={<SignUp />} />
+      <Route path="/verify-email" element={<VerifyEmail />} />
+      <Route path="/*" element={<NotFoundPage />} />
       <Route
         path="/tags"
         element={
-          <PrivateLayout>
-            <TagsPage />
-          </PrivateLayout>
-        }
-      />
-      <Route
-        path="/admin"
-        element={
-          <AdminRoute>
+          <PrivateRoute>
             <PrivateLayout>
-              <Admin />
+              <TagsPage />
             </PrivateLayout>
-          </AdminRoute>
+          </PrivateRoute>
         }
       />
       <Route
@@ -36,6 +34,16 @@ function RenderRouter() {
           <PrivateRoute>
             <PrivateLayout>
               <Dashboard />
+            </PrivateLayout>
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/profile"
+        element={
+          <PrivateRoute>
+            <PrivateLayout>
+              <Profile />
             </PrivateLayout>
           </PrivateRoute>
         }

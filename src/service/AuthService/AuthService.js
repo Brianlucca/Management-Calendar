@@ -4,17 +4,16 @@ import {
   signInWithEmailAndPassword,
   signOut,
   sendEmailVerification,
-  onAuthStateChanged,
+  GoogleAuthProvider,
+  signInWithPopup,
+  fetchSignInMethodsForEmail,
+  linkWithCredential,
 } from "firebase/auth";
-import { doc, setDoc, getDoc, updateDoc } from "firebase/firestore";
+import { doc, setDoc, updateDoc } from "firebase/firestore";
 
-export const signUp = async (email, password, name, role, color) => {
+export const signUp = async (name, email, password) => {
   try {
-    const userCredential = await createUserWithEmailAndPassword(
-      auth,
-      email,
-      password
-    );
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
 
     await sendEmailVerification(user);
@@ -22,90 +21,76 @@ export const signUp = async (email, password, name, role, color) => {
     await setDoc(doc(firestore, "users", user.uid), {
       name,
       email,
-      role,
-      color,
+      emailVerified: false,
       createdAt: new Date().toISOString(),
-      isActive: false,
-      emailVerified: user.emailVerified,
-    });
-
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      if (currentUser && currentUser.uid === user.uid) {
-        if (currentUser.emailVerified) {
-          await updateDoc(doc(firestore, "users", currentUser.uid), {
-            isActive: true,
-            emailVerified: true,
-          });
-          unsubscribe();
-        }
-      }
     });
 
     return user;
   } catch (error) {
-    console.error("Erro ao cadastrar:", error);
     throw error;
   }
 };
 
 export const signIn = async (email, password) => {
   try {
-    const userCredential = await signInWithEmailAndPassword(
-      auth,
-      email,
-      password
-    );
+    const userCredential = await signInWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
 
-    const userDoc = await getDoc(doc(firestore, "users", user.uid));
-
-    if (!userDoc.exists()) {
-      throw new Error("Usuário não encontrado");
+    if (!user.emailVerified) {
+      throw new Error("Verifique seu e-mail para ativar a conta.");
     }
 
-    const userData = userDoc.data();
-
-    if (user.emailVerified && !userData.isActive) {
-      await updateDoc(doc(firestore, "users", user.uid), {
-        isActive: true,
-        emailVerified: true,
-      });
-    }
-
-    if (!userData.isActive) {
-      throw new Error("Conta não ativada. Verifique seu e-mail.");
-    }
-    return { user, role: userData.role };
+    return user;
   } catch (error) {
-    console.error("Erro ao fazer login:", error);
     throw error;
   }
 };
 
-export const setupAuthStateListener = () => {
-  return onAuthStateChanged(auth, async (user) => {
-    if (user) {
-      const userDoc = await getDoc(doc(firestore, "users", user.uid));
-      if (userDoc.exists()) {
-        const userData = userDoc.data();
+export const signInWithGoogle = async () => {
+  try {
+    const provider = new GoogleAuthProvider();
+    const result = await signInWithPopup(auth, provider);
+    const user = result.user;
 
-        if (user.emailVerified && !userData.isActive) {
-          await updateDoc(doc(firestore, "users", user.uid), {
-            isActive: true,
-            emailVerified: true,
-          });
-        }
-      }
+    await setDoc(
+      doc(firestore, "users", user.uid),
+      {
+        name: user.displayName || user.email.split('@')[0],
+        email: user.email,
+        emailVerified: user.emailVerified,
+        createdAt: new Date().toISOString(),
+      },
+      { merge: true }
+    );
+
+    const methods = await fetchSignInMethodsForEmail(auth, user.email);
+
+    if (methods.length > 0 && methods.includes('password')) {
+      const credential = GoogleAuthProvider.credentialFromResult(result);
+      const userCredential = await signInWithEmailAndPassword(auth, user.email, user.password);
+      await linkWithCredential(userCredential.user, credential);
     }
-  });
+
+    return user;
+  } catch (error) {
+    throw error;
+  }
 };
 
 export const logout = async () => {
   try {
     await signOut(auth);
-    localStorage.clear();
   } catch (error) {
-    console.error("Erro ao fazer logout:", error);
     throw error;
   }
+};
+
+export const checkEmailVerification = async (user) => {
+  await user.reload();
+  if (user.emailVerified) {
+    const userRef = doc(firestore, "users", user.uid);
+    await updateDoc(userRef, { emailVerified: true });
+    return true;
+  }
+  return false;
 };

@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import Sidebar from "../../components/menu/sideBar/SideBar";
 import MobileMenu from "../../components/menu/mobileMenu/MobileMenu";
+import Footer from "../../components/footer/Footer";
+
 function PrivateLayout({ children }) {
   const [isMobile, setIsMobile] = useState(false);
 
@@ -23,9 +25,12 @@ function PrivateLayout({ children }) {
   }, []);
 
   return (
-    <div>
+    <div className="flex flex-col min-h-screen">
       {isMobile ? <MobileMenu /> : <Sidebar />}
-      <div>{children}</div>
+      
+      <div className="flex-grow">{children}</div>
+
+      <Footer />
     </div>
   );
 }
