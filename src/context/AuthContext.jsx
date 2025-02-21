@@ -1,15 +1,9 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
-import { 
-  onAuthStateChanged, 
-  signOut, 
-  createUserWithEmailAndPassword, 
-  signInWithEmailAndPassword,
-  sendEmailVerification
-} from "firebase/auth";
+import { onAuthStateChanged, signOut } from "firebase/auth";
 import { auth, firestore } from "../service/FirebaseConfig";
 import { useNavigate } from "react-router-dom";
-import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
-import { setupAuthStateListener } from "../service/AuthService/AuthService";
+import { doc, getDoc } from "firebase/firestore";
+import Loading from "../components/loading/Loading";
 
 const AuthContext = createContext();
 
@@ -19,131 +13,65 @@ export function useAuth() {
 
 export function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
-  const [userRole, setUserRole] = useState(null);
+  const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
 
   useEffect(() => {
-    const unsubscribeAuthListener = setupAuthStateListener();
-
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
+      setLoading(true);
       if (!user) {
         setCurrentUser(null);
-        setUserRole(null);
+        setUserData(null);
         setLoading(false);
-        navigate("/signin");
         return;
       }
 
       try {
-        const userDoc = await getDoc(doc(firestore, "users", user.uid));
-        if (userDoc.exists()) {
-          const userData = userDoc.data();
-
-          if (user.emailVerified && !userData.isActive) {
-            await updateDoc(doc(firestore, "users", user.uid), {
-              isActive: true,
-              emailVerified: true
-            });
-          }
-
-          if (!userData.isActive) {
-            await signOut(auth);
-            navigate("/signin");
-            return;
-          }
-
-          setUserRole(userData.role);
-          setCurrentUser(user);
-
-          if (userData.role === "administrador") {
-            console.log("Usuário é administrador");
-          } else if (userData.role === "coordenador") {
-            console.log("Usuário é coordenador");
-          } else {
-            console.log("Usuário é usuário comum");
-          }
-        } else {
-          await signOut(auth);
-          navigate("/signin");
+        const providerData = user.providerData[0]?.providerId;
+        if (providerData !== 'google.com' && !user.emailVerified) {
+          navigate("/verify-email", { replace: true });
+          setLoading(false);
+          return;
         }
-      } catch (error) {
-        console.error("Erro ao buscar role do usuário:", error);
-        await signOut(auth);
-        navigate("/signin");
-      }
 
-      setLoading(false);
+        const userDocRef = doc(firestore, "users", user.uid);
+        const userDoc = await getDoc(userDocRef);
+
+        if (!userDoc.exists()) {
+          await signOut(auth);
+          setLoading(false);
+          return;
+        }
+
+        setCurrentUser(user);
+        setUserData(userDoc.data());
+      } catch (error) {
+        await signOut(auth);
+      } finally {
+        setLoading(false);
+      }
     });
 
-    return () => {
-      unsubscribeAuthListener();
-      unsubscribe();
-    }
+    return () => unsubscribe();
   }, [navigate]);
 
-  const value = {
-    currentUser,
-    userRole,
-    loading,
-    signUp: async (email, password, name, role, color) => {
-      try {
-        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-        const user = userCredential.user;
-
-        await sendEmailVerification(user);
-
-        await setDoc(doc(firestore, "users", user.uid), {
-          name,
-          email,
-          role,
-          color,
-          createdAt: new Date().toISOString(),
-          isActive: false,
-          emailVerified: false
-        });
-
-        return user;
-      } catch (error) {
-        console.error("Erro ao cadastrar:", error);
-        throw error;
-      }
-    },
-    signIn: async (email, password) => {
-      try {
-        const userCredential = await signInWithEmailAndPassword(auth, email, password);
-        const user = userCredential.user;
-
-        if (!user.emailVerified) {
-          throw new Error("Conta não ativada. Verifique seu e-mail.");
-        }
-
-        const userDoc = await getDoc(doc(firestore, "users", user.uid));
-        if (userDoc.exists()) {
-          const userData = userDoc.data();
-
-          return { user, role: userData.role };
-        } else {
-          throw new Error("Usuário não encontrado no Firestore.");
-        }
-      } catch (error) {
-        console.error("Erro ao fazer login:", error);
-        throw error;
-      }
-    },
-    logout: async () => {
-      await signOut(auth);
-      setCurrentUser(null);
-      setUserRole(null);
-      navigate("/signin");
-    },
+  const logout = async () => {
+    await signOut(auth);
+    setCurrentUser(null);
+    setUserData(null);
+    navigate("/signin");
   };
 
   return (
-    <AuthContext.Provider value={value}>
-      {!loading && children}
+    <AuthContext.Provider value={{ currentUser, userData, loading, logout }}>
+      {loading ? (
+        <div>
+          <Loading />
+        </div>
+      ) : (
+        children
+      )}
     </AuthContext.Provider>
   );
-}
-
-export { AuthContext };
+}export { AuthContext };
