@@ -1,0 +1,41 @@
+@media (max-width: 768px) {
+    .fc-header-toolbar {
+      flex-direction: column;
+      gap: 0.5rem;
+      padding: 0.5rem;
+    }
+  
+    .fc-toolbar-chunk {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.25rem;
+      justify-content: center;
+    }
+  
+    .fc-button {
+      font-size: 0.75rem !important;
+      padding: 0.25rem 0.5rem !important;
+      margin: 2px !important;
+    }
+  
+    .fc-toolbar-title {
+      font-size: 1rem !important;
+      margin: 0.5rem 0 !important;
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .fc-header-toolbar {
+      gap: 0.25rem;
+    }
+  
+    .fc-button {
+      font-size: 0.65rem !important;
+      padding: 0.2rem 0.4rem !important;
+    }
+  
+    .fc-prev-button, .fc-next-button {
+      min-width: 28px !important;
+    }
+  }
+  
