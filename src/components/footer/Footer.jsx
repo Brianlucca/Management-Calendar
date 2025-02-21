@@ -3,7 +3,6 @@ import { Github, Linkedin } from "lucide-react";
 const Footer = () => {
   return (
     <>
-    <hr className="my-4 border-gray-200" />
     <footer className="bg-gray-750 text-black p-8 w-full md:ml-20 md:w-[calc(100%-5rem)]">
       <div className="container mx-auto text-center md:text-left grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 ">
         
