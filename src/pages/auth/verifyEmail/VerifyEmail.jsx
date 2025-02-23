@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { auth } from "../../../service/FirebaseConfig";
 import { useNavigate } from "react-router-dom";
+import { checkEmailVerification } from "../../../service/AuthService/AuthService"
 
 const VerifyEmail = () => {
   const [emailVerified, setEmailVerified] = useState(false);
@@ -30,7 +31,9 @@ const VerifyEmail = () => {
           return;
         }
 
-        if (auth.currentUser.emailVerified) {
+        const isVerified = await checkEmailVerification(auth.currentUser);
+        
+        if (isVerified) {
           setEmailVerified(true);
           clearInterval(interval);
           setTimeout(() => navigate("/"), 2000);
@@ -43,7 +46,7 @@ const VerifyEmail = () => {
     };
 
     checkVerification();
-    interval = setInterval(checkVerification, 3000);
+    interval = setInterval(checkVerification, 3000);  // Verifica a cada 3 segundos
 
     return () => clearInterval(interval);
   }, [navigate]);
