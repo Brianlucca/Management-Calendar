@@ -67,12 +67,10 @@ export const useTaskModal = ({ selectedTask, selectedDate, onSubmit, onDelete, o
   };
 
   const handleDelete = async () => {
-    if (window.confirm("Tem certeza que deseja excluir esta tarefa?")) {
-      await onDelete(selectedTask.id);
-      onClose();
-    }
+    await onDelete(selectedTask.id);
+    onClose();
   };
-
+  
   const getCoordinates = async (location) => {
     if (!location) return null;
   
