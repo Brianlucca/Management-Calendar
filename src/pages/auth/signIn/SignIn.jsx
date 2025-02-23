@@ -1,5 +1,8 @@
 import React, { useState } from "react";
-import { signIn, signInWithGoogle } from "../../../service/AuthService/AuthService";
+import {
+  signIn,
+  signInWithGoogle,
+} from "../../../service/AuthService/AuthService";
 import { useNavigate } from "react-router-dom";
 import { useNotification } from "../../../components/notification/Notification";
 import googleLogo from "/logo-google.png";
@@ -34,12 +37,14 @@ const SignIn = () => {
 
   return (
     <div className="h-screen flex flex-col md:flex-row">
-      {/* Imagem de fundo */}
       <div className="w-full md:w-1/2 h-64 md:h-full flex items-center justify-center bg-white">
-        <img src={background} alt="Background" className="w-3/4 max-h-3/4 object-cover" />
+        <img
+          src={background}
+          alt="Background"
+          className="w-3/4 max-h-3/4 object-cover"
+        />
       </div>
 
-      {/* Formulário */}
       <div className="w-full md:w-1/2 flex items-center justify-center p-6 md:p-10">
         <div className="bg-white p-6 rounded-2xl shadow-2xl w-full max-w-md">
           <h2 className="text-3xl font-bold text-slate-700 text-center mb-6">
@@ -49,14 +54,16 @@ const SignIn = () => {
             <input
               type="email"
               placeholder="E-mail"
-              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:border-slate-900 focus:outline-none focus:border-none text-black placeholder-gray-500"              value={email}
+              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:border-slate-900 focus:outline-none focus:border-none text-black placeholder-gray-500"
+              value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
             />
             <input
               type="password"
               placeholder="Senha"
-              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:border-slate-900 focus:outline-none focus:border-none text-black placeholder-gray-500"              value={password}
+              className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:border-slate-900 focus:outline-none focus:border-none text-black placeholder-gray-500"
+              value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
             />

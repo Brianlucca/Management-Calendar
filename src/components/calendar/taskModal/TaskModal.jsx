@@ -46,10 +46,8 @@ const TaskModal = ({
   };
 
   const handleDelete = async () => {
-    if (window.confirm("Tem certeza que deseja excluir esta tarefa?")) {
       await onDelete(selectedTask.id);
       onClose();
-    }
   };
 
   const renderPreview = () => (
@@ -163,7 +161,7 @@ const TaskModal = ({
           onChange={(e) =>
             setFormData({ ...formData, title: e.target.value })
           }
-          className="w-full px-4 py-2.5 rounded-lg border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all"
+          className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:border-slate-900 focus:outline-none focus:border-none text-black placeholder-gray-500 transition-all"
           required
         />
       </section>
@@ -177,7 +175,7 @@ const TaskModal = ({
           onChange={(e) =>
             setFormData({ ...formData, description: e.target.value })
           }
-          className="w-full px-4 py-2.5 rounded-lg border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 min-h-[120px] transition-all"
+          className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:border-slate-900 focus:outline-none focus:border-none text-black placeholder-gray-500 min-h-[120px] transition-all"
         />
       </section>
 
@@ -192,7 +190,7 @@ const TaskModal = ({
             onChange={(e) =>
               setFormData({ ...formData, startDate: e.target.value })
             }
-            className="w-full px-4 py-2.5 rounded-lg border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all"
+            className="w-full px-4 py-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:border-slate-900 focus:outline-none focus:border-none text-black placeholder-gray-500 transition-all"
             required
           />
         </div>
@@ -206,7 +204,7 @@ const TaskModal = ({
             onChange={(e) =>
               setFormData({ ...formData, endDate: e.target.value })
             }
-            className="w-full px-4 py-2.5 rounded-lg border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all"
+            className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:border-slate-900 focus:outline-none focus:border-none text-black placeholder-gray-500 transition-all"
             required
           />
         </div>
@@ -222,7 +220,7 @@ const TaskModal = ({
           onChange={(e) =>
             setFormData({ ...formData, location: e.target.value })
           }
-          className="w-full px-4 py-2.5 rounded-lg border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all"
+          className="w-full px-4 py-2.5 rounded-lg border border-slate-300 focus:ring-2 focus:border-slate-900 focus:outline-none focus:border-none text-black placeholder-gray-500 transition-all"
           placeholder="Ex: Av. Paulista, 1000 ou -23.5617, -46.6561"
         />
         <p className="text-sm text-gray-500 mt-1">

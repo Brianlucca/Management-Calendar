@@ -20,6 +20,7 @@ const Footer = () => {
           <h3 className="font-semibold text-lg mb-3">Links Rápidos</h3>
           <ul className="space-y-2">
             <li><a href="/" className="hover:underline">Dashboard</a></li>
+            <li><a href="/reminder" className="hover:underline">Lembretes</a></li>
             <li><a href="/profile" className="hover:underline">Perfil</a></li>
             <li><a href="/tags" className="hover:underline">Gerenciar Tags</a></li>
           </ul>
@@ -27,7 +28,7 @@ const Footer = () => {
 
         <div className="flex flex-col items-center sm:items-start">
           <h3 className="font-semibold text-lg mb-3">Contato</h3>
-          <p className="text-sm mb-2">No momento ainda sem suporte</p>
+          <a className="text-sm mb-2 hover:underline" href="mailto:suportemanagementcalendar@gmail.com">E-mail</a>
         </div>
 
         <div className="flex flex-col items-center sm:items-start">
@@ -36,7 +37,7 @@ const Footer = () => {
             <a href="https://www.linkedin.com/in/brian-lucca-cardozo" target="_blank" rel="noopener noreferrer" className="text-xl hover:text-blue-700">
               <Linkedin size={24} />
             </a>
-            <a href="https://github.com/Brianlucca" target="_blank" rel="noopener noreferrer" className="text-xl hover:text-black">
+            <a href="https://github.com/Brianlucca" target="_blank" rel="noopener noreferrer" className="text-xl hover:text-indigo-800">
               <Github size={24} />
             </a>
           </div>
