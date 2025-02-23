@@ -46,7 +46,7 @@ const Footer = () => {
       
       <div className="mt-5 text-center text-sm text-gray-400">
         <p>&copy; {new Date().getFullYear()} Management Calendar. Todos os direitos reservados.</p>
-        <p>Versão 1.0.0</p>
+        <p>Versão 1.1.0</p>
       </div>
     </footer>
     </>

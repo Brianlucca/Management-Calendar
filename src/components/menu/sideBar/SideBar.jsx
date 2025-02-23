@@ -89,7 +89,7 @@ const Sidebar = () => {
           }`}
         >
           <p className={isOpen ? "" : "text-xs"}>@ 2025 Management Calendar</p>
-          <p className={isOpen ? "" : "text-xs"}>Versão 1.0.0</p>
+          <p className={isOpen ? "" : "text-xs"}>Versão 1.1.0</p>
         </div>
       </nav>
     </main>
