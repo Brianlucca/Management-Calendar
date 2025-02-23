@@ -30,13 +30,18 @@ const TagsLegend = ({ onTagDelete }) => {
     if (currentUser && selectedTags.length > 0) {
       try {
         await Promise.all(
-          selectedTags.map(tagId => remove(ref(db, `users/${currentUser.uid}/tags/${tagId}`))
-        ));
-        onTagDelete(selectedTags);
-        setSelectedTags([]);
+          selectedTags.map(tagId => remove(ref(db, `users/${currentUser.uid}/tags/${tagId}`)))
+        );
+  
+        if (onTagDelete) {
+          onTagDelete(selectedTags);
+        }        setSelectedTags([]);
         setShowModal(false);
+  
+        showNotification("Tags excluídas com sucesso!", "success");
+  
       } catch (error) {
-        showNotification(`Erro ao excluir tags`, "error");
+        showNotification("Erro ao excluir tags", "error");
       }
     }
   };

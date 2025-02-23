@@ -19,15 +19,18 @@ const TagsManager = ({ onTagCreate }) => {
       const newTag = {
         name: tagName,
         color: tagColor,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
       };
-
+  
       try {
         const tagRef = await push(ref(db, `users/${currentUser.uid}/tags`), newTag);
         onTagCreate({ ...newTag, id: tagRef.key });
         setTagName("");
+  
+        showNotification("Tag criada com sucesso!", "success");
+  
       } catch (error) {
-        showNotification(`Erro ao salvar tag`, "error");
+        showNotification("Erro ao salvar tag", "error");
       }
     }
   };
