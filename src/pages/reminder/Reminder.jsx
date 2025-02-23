@@ -2,7 +2,6 @@ import { useState } from "react";
 import useReminder from "../../hooks/reminder/UseReminder";
 import {
   CalendarDays,
-  Circle,
   CircleCheck,
   Clock,
   Pencil,
