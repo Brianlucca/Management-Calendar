@@ -28,6 +28,7 @@ export function AuthProvider({ children }) {
       }
 
       try {
+        
         const providerData = user.providerData[0]?.providerId;
         if (providerData !== 'google.com' && !user.emailVerified) {
           navigate("/verify-email", { replace: true });
