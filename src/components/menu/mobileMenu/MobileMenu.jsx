@@ -8,6 +8,7 @@ import {
   Tags,
   List,
   ListTodo,
+  AlarmCheck,
 } from "lucide-react";
 import { logout } from "../../../service/AuthService/AuthService";
 import { useNotification } from "../../../components/notification/Notification";
@@ -34,6 +35,8 @@ const MobileMenu = () => {
         return "Gerenciar Tags";
       case "/reminder":
         return "Lembretes";
+      case "/pomodoro":
+        return "Pomodoro";
       default:
         return "Menu";
     }
@@ -72,6 +75,14 @@ const MobileMenu = () => {
                 className="text-white flex items-center space-x-2 p-2 hover:bg-gray-800 rounded"
               >
                 <ListTodo /> <span>Lembretes</span>
+              </Link>
+            </li>
+            <li>
+              <Link
+                to="/pomodoro"
+                className="text-white flex items-center space-x-2 p-2 hover:bg-gray-800 rounded"
+              >
+                <AlarmCheck /> <span>Pomodoro</span>
               </Link>
             </li>
             <li>

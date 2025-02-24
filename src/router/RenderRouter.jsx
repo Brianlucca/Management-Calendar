@@ -10,6 +10,7 @@ import SignUp from "../pages/auth/signUp/SignUp";
 import VerifyEmail from "../pages/auth/verifyEmail/VerifyEmail";
 import NotFoundPage from "../pages/notFoundPage/NotFoundPage";
 import Reminder from "../pages/reminder/Reminder";
+import Pomodoro from "../pages/pomodoro/Pomodoro";
 
 function RenderRouter() {
 
@@ -19,6 +20,16 @@ function RenderRouter() {
       <Route path="/signup" element={<SignUp />} />
       <Route path="/verify-email" element={<VerifyEmail />} />
       <Route path="/*" element={<NotFoundPage />} />
+      <Route
+        path="/pomodoro"
+        element={
+          <PrivateRoute>
+            <PrivateLayout>
+              <Pomodoro />
+            </PrivateLayout>
+          </PrivateRoute>
+        }
+      />
       <Route
         path="/reminder"
         element={
