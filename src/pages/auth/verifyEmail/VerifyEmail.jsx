@@ -64,11 +64,11 @@ const VerifyEmail = () => {
     <div className="flex flex-col items-center justify-center h-screen">
       <h2 className="text-2xl font-bold text-gray-700">Verifique seu e-mail</h2>
       {!emailVerified ? (
-        <p className="text-gray-600 mt-4">
+        <p className="text-gray-600 mt-4 text-center">
           Clique no link enviado para seu e-mail e aguarde alguns segundos...
         </p>
       ) : (
-        <p className="text-green-600 mt-4">✅ Seu e-mail foi verificado! Redirecionando...</p>
+        <p className="text-green-600 mt-4 text-center">✅ Seu e-mail foi verificado! Redirecionando...</p>
       )}
     </div>
   );

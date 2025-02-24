@@ -7,6 +7,8 @@ import {
   Menu,
   Tags,
   ListTodo,
+  Terminal,
+  AlarmCheck,
 } from "lucide-react";
 import { logout } from "../../../service/AuthService/AuthService";
 import { useNotification } from "../../notification/Notification";
@@ -50,6 +52,15 @@ const Sidebar = () => {
             >
               <ListTodo />
               <span className={isOpen ? "block" : "hidden"}>Lembretes</span>
+            </Link>
+          </li>
+          <li>
+            <Link
+              to="/pomodoro"
+              className="text-white flex items-center space-x-2 p-3 hover:bg-gray-800 rounded"
+            >
+              <AlarmCheck />
+              <span className={isOpen ? "block" : "hidden"}>Pomodoro</span>
             </Link>
           </li>
           <li>
