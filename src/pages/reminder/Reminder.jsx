@@ -7,6 +7,10 @@ import {
   Pencil,
   Trash2,
 } from "lucide-react";
+
+
+const MAX_TITLE_LENGTH = 80;
+
 export default function Reminder() {
   const [selectedTask, setSelectedTask] = useState(null);
   const [showModal, setShowModal] = useState(false);
@@ -19,10 +23,15 @@ export default function Reminder() {
     completeTask,
     deleteTask,
   } = useReminder();
+
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
+    if (name === "title" && value.length > MAX_TITLE_LENGTH) return;
     setNewTask((prev) => ({ ...prev, [name]: value }));
   };
+
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     const taskData = {
@@ -35,6 +44,8 @@ export default function Reminder() {
     setShowModal(false);
     setSelectedTask(null);
   };
+
+
   const formatDateTime = (dateString) => ({
     date: new Date(dateString).toLocaleDateString("pt-BR"),
     time: new Date(dateString).toLocaleTimeString([], {
@@ -165,15 +176,17 @@ export default function Reminder() {
         </button>
 
         <div
-          className={`fixed inset-0 bg-black bg-opacity-50 transition-opacity z-50 ${
-            showModal ? "opacity-100" : "opacity-0 pointer-events-none"
-          }`}
+          className={`fixed inset-0 bg-black bg-opacity-50 transition-opacity z-50 ${showModal ? "opacity-100" : "opacity-0 pointer-events-none"
+            }`}
         >
           <div
-            className={`absolute bottom-0 w-full bg-white rounded-t-2xl shadow-xl p-4 md:p-6 transition-transform duration-300 ${
-              showModal ? "translate-y-0" : "translate-y-full"
-            }`}
+            className={`absolute bottom-0 w-full bg-white rounded-t-2xl shadow-xl p-4 md:p-6 transition-transform duration-300 ${showModal ? "translate-y-0" : "translate-y-full"
+              }`}
           >
+            <div className="text-center md:text-sm text-xs m-2 md:m-0 text-gray-400">
+              <p>Projeto para aprendizado e portfólio - Não coloque informações sensíveis.</p>
+            </div>
+
             <div className="flex justify-between items-center mb-4 md:mb-6">
               <h2 className="text-xl md:text-2xl font-bold text-gray-800">
                 {selectedTask ? "Editar" : "Novo"} Lembrete
@@ -201,6 +214,9 @@ export default function Reminder() {
                   className="w-full px-3 py-2 md:px-4 md:py-2 border border-slate-300 rounded-lg focus:ring-2 focus:border-slate-900 focus:outline-none focus:border-none text-black placeholder-gray-500"
                   required
                 />
+                <p className={`text-sm mt-1 md:ml-0 ml-1 ${newTask.title.length >= MAX_TITLE_LENGTH ? "text-red-500" : "text-gray-500"}`}>
+                  {newTask.title.length}/{MAX_TITLE_LENGTH} caracteres
+                </p>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div>

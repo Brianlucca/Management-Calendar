@@ -151,6 +151,9 @@ const TaskModal = ({
 
   const renderEditForm = () => (
     <form onSubmit={handleSubmit} className="space-y-6">
+      <div className="text-center text-sm text-gray-400">
+        <p>Projeto para aprendizado e portfólio - Não coloque informações sensíveis.</p>
+      </div>
       <section>
         <label className="block text-sm font-medium text-gray-700 mb-2">
           Título *
@@ -159,11 +162,15 @@ const TaskModal = ({
           type="text"
           value={formData.title}
           onChange={(e) =>
-            setFormData({ ...formData, title: e.target.value })
+            setFormData({ ...formData, title: e.target.value.slice(0, 90) })
           }
           className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:border-slate-900 focus:outline-none focus:border-none text-black placeholder-gray-500 transition-all"
           required
+          maxLength={90}
         />
+        <p className="text-sm text-gray-500 mt-1">
+  {formData.title.length}/90 caracteres
+</p>
       </section>
 
       <section>
@@ -173,10 +180,14 @@ const TaskModal = ({
         <textarea
           value={formData.description}
           onChange={(e) =>
-            setFormData({ ...formData, description: e.target.value })
+            setFormData({ ...formData, description: e.target.value.slice(0, 350) })
           }
           className="w-full px-4 py-2.5 border border-slate-300 rounded-lg focus:ring-2 focus:border-slate-900 focus:outline-none focus:border-none text-black placeholder-gray-500 min-h-[120px] transition-all"
-        />
+          maxLength={350}
+       />
+       <p className="text-sm text-gray-500 mt-1">
+  {formData.description.length}/350 caracteres
+</p>
       </section>
 
       <section className="grid grid-cols-1 md:grid-cols-2 gap-6">
