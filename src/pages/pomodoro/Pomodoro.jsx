@@ -54,7 +54,7 @@ const Pomodoro = () => {
     const minutes = Math.floor(time / 60);
     const seconds = time % 60;
     const formattedTime = `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
-    document.title = `${formattedTime} - Pomodoro Timer`;
+    document.title = `${formattedTime} - Pomodoro`;
   }, [time]);
 
   const startTimer = () => {
@@ -89,7 +89,6 @@ const Pomodoro = () => {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
       <div className="bg-white rounded-xl shadow-lg p-8 max-w-md w-full">
-        {/* Modos */}
         <div className="flex justify-center gap-4 mb-6">
           <button
             onClick={() => switchMode("pomodoro")}
@@ -123,7 +122,17 @@ const Pomodoro = () => {
           </button>
         </div>
 
-        {/* Temporizador */}
+        <div className="w-full bg-gray-200 rounded-full h-2 mb-4">
+          <div
+            className="h-2 rounded-full transition-all"
+            style={{
+              width: `${(time / modes[mode]) * 100}%`,
+              backgroundColor: mode === "pomodoro" ? "#3b82f6" : mode === "shortBreak" ? "#10b981" : "#9333ea",
+            }}
+          />
+        </div>
+
+
         <div className="text-center mb-6">
           <div className="text-8xl font-bold text-gray-800">
             {formatTime(time)}
@@ -133,7 +142,6 @@ const Pomodoro = () => {
           </div>
         </div>
 
-        {/* Controles */}
         <div className="flex justify-center gap-4">
           {isActive ? (
             <button

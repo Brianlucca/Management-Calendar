@@ -72,11 +72,6 @@ const Calendar = () => {
                   <span className="text-sm font-semibold truncate">
                     {arg.event.title}
                   </span>
-                  {arg.event.extendedProps.description && (
-                    <span className="text-xs text-slate-400 truncate">
-                      {arg.event.extendedProps.description}
-                    </span>
-                  )}
                 </div>
               </div>
             )}

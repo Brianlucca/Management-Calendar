@@ -2,6 +2,7 @@ import { useState } from "react";
 import useReminder from "../../hooks/reminder/UseReminder";
 import {
   CalendarDays,
+  Check,
   CircleCheck,
   Clock,
   Pencil,
@@ -148,8 +149,8 @@ export default function Reminder() {
                           <Clock className="mr-1 md:size-5 size-4" />
                           <span>{time}</span>
                         </div>
-                        <span className="block mt-1 text-gray-500 text-sm">
-                          ✅ Concluído em: {completed.date} {completed.time}
+                        <span className="block mt-1 text-gray-500 text-sm flex">
+                          <Check className="text-green-400 mr-1 size-5" /> Concluído em: {completed.date} {completed.time}
                         </span>
                       </div>
                       <div className="flex flex-col md:flex-row gap-1 md:gap-2">
