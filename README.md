@@ -15,4 +15,4 @@ Management Calendar is a web application designed to help users efficiently mana
 
 ⏳ Pomodoro Timer: Stay focused and boost productivity with an integrated Pomodoro timer to manage work sessions efficiently.
 
-Management Calendar is built with a focus on simplicity, clarity, and usability, ensuring users can stay productive without being overwhelmed by complex features.
+Management Calendar is built with a focus on simplicity, clarity, and usability, ensuring users can stay productive without being overwhelmed by complex features
