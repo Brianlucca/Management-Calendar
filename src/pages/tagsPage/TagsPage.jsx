@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import TagsManager from "../../components/tags/TagsManager";
-import TagsLegend from "../../components/tags/tagsLegend/TagsLegend";
+import TagsLegend from "../../components/tags/TagsLegend";
 
 const TagsPage = () => {
   const [tags, setTags] = useState([]);

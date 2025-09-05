@@ -1,178 +1,146 @@
-import { useState, useEffect } from "react";
-import { Play, Pause, SkipForward, RotateCcw } from "lucide-react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
+import { Play, Pause, SkipForward, RotateCcw, Settings, BrainCircuit, Coffee } from "lucide-react";
+import { useAuth } from "../../context/AuthContext";
+import usePomodoroSettings from "../../hooks/pomodoro/usePomodoroSettings";
+import SettingsModal from "../../components/pomodoro/SettingsModal";
+import TaskList from "../../components/pomodoro/TaskList";
+import { ref, push } from "firebase/database";
+import { db } from "../../service/FirebaseConfig";
 
 const Pomodoro = () => {
+  const { currentUser } = useAuth();
+  const { settings, saveSettings, loading: settingsLoading } = usePomodoroSettings();
+  
   const [time, setTime] = useState(25 * 60);
   const [isActive, setIsActive] = useState(false);
   const [mode, setMode] = useState("pomodoro");
   const [cycles, setCycles] = useState(0);
-  const [isPaused, setIsPaused] = useState(false);
+  const [selectedTask, setSelectedTask] = useState(null);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
-  const modes = {
-    pomodoro: 25 * 60,
-    shortBreak: 5 * 60,
-    longBreak: 15 * 60,
+  const modesInSeconds = useMemo(() => ({
+    pomodoro: settings.pomodoro * 60,
+    shortBreak: settings.shortBreak * 60,
+    longBreak: settings.longBreak * 60,
+  }), [settings]);
+
+  useEffect(() => {
+    if (!settingsLoading) {
+      setTime(modesInSeconds[mode]);
+      setIsActive(false);
+    }
+  }, [settings, settingsLoading, mode, modesInSeconds]);
+
+  const colorConfig = {
+    pomodoro: { bg: "bg-rose-50", accent: "#be123c", accentLight: "#fda4af", button: "bg-rose-600 hover:bg-rose-700", text: "text-rose-600" },
+    shortBreak: { bg: "bg-emerald-50", accent: "#059669", accentLight: "#6ee7b7", button: "bg-emerald-600 hover:bg-emerald-700", text: "text-emerald-600" },
+    longBreak: { bg: "bg-indigo-50", accent: "#4338ca", accentLight: "#a5b4fc", button: "bg-indigo-600 hover:bg-indigo-700", text: "text-indigo-600" },
   };
+  const currentTheme = colorConfig[mode];
+  
+  const handleTimerEnd = useCallback(() => {
+    new Audio("/alert.weba").play().catch(console.error);
+    let nextMode;
+    if (mode === "pomodoro") {
+      const newCycles = cycles + 1;
+      setCycles(newCycles);
+      if (currentUser) {
+        push(ref(db, `users/${currentUser.uid}/pomodoro/history`), { 
+          completedAt: new Date().toISOString(), 
+          task: selectedTask?.title || 'Foco geral' 
+        });
+      }
+      nextMode = newCycles % 4 === 0 ? "longBreak" : "shortBreak";
+    } else {
+      nextMode = "pomodoro";
+    }
+    setMode(nextMode);
+    setTime(modesInSeconds[nextMode]);
+    setIsActive(true);
+  }, [mode, cycles, currentUser, selectedTask, modesInSeconds]);
 
   useEffect(() => {
     let interval;
     if (isActive && time > 0) {
-      interval = setInterval(() => {
-        setTime((prev) => prev - 1);
-      }, 1000);
-    } else if (time === 0) {
+      interval = setInterval(() => setTime(prev => prev - 1), 1000);
+    } else if (time === 0 && isActive) {
       handleTimerEnd();
     }
     return () => clearInterval(interval);
-  }, [isActive, time]);
-
-  const handleTimerEnd = () => {
-    playSound();
-    setIsActive(false);
-
-
-    let nextMode;
-    if (mode === "pomodoro") {
-      setCycles((prev) => prev + 1);
-      nextMode = cycles % 3 === 2 ? "longBreak" : "shortBreak";
-    } else {
-      nextMode = "pomodoro";
-    }
-
-    setMode(nextMode);
-    setTime(modes[nextMode]);
-
-    setIsActive(true);
-  };
-
-  const playSound = () => {
-    const audio = new Audio("/alert.weba");
-    audio.play().catch((error) => console.error("Erro ao reproduzir som:", error));
-  };
-
-  useEffect(() => {
-    const minutes = Math.floor(time / 60);
-    const seconds = time % 60;
-    const formattedTime = `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
-    document.title = `${formattedTime} - Pomodoro`;
-  }, [time]);
-
-  const startTimer = () => {
-    setIsActive(true);
-    setIsPaused(false);
-  };
-
-  const pauseTimer = () => {
-    setIsActive(false);
-    setIsPaused(true);
-  };
-
-  const resetTimer = () => {
-    setIsActive(false);
-    setIsPaused(false);
-    setTime(modes[mode]);
-  };
-
-  const switchMode = (newMode) => {
+  }, [isActive, time, handleTimerEnd]);
+  
+  const switchMode = (newMode, shouldStart = false) => {
     setMode(newMode);
-    setTime(modes[newMode]);
-    setIsActive(false);
-    setIsPaused(false);
+    setTime(modesInSeconds[newMode]);
+    setIsActive(shouldStart);
   };
-
+  
   const formatTime = (seconds) => {
     const minutes = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${String(minutes).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
   };
 
+  const progress = (modesInSeconds[mode] - time) / modesInSeconds[mode];
+  const circumference = 2 * Math.PI * 140;
+  const strokeDashoffset = circumference * (1 - progress);
+
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
-      <div className="bg-white rounded-xl shadow-lg p-8 max-w-md w-full">
-        <div className="flex justify-center gap-4 mb-6">
-          <button
-            onClick={() => switchMode("pomodoro")}
-            className={`px-4 py-2 rounded-lg ${
-              mode === "pomodoro"
-                ? "bg-blue-500 text-white"
-                : "bg-gray-100 text-gray-700"
-            }`}
-          >
-            Pomodoro
-          </button>
-          <button
-            onClick={() => switchMode("shortBreak")}
-            className={`px-4 py-2 rounded-lg ${
-              mode === "shortBreak"
-                ? "bg-green-500 text-white"
-                : "bg-gray-100 text-gray-700"
-            }`}
-          >
-            Intervalo Curto
-          </button>
-          <button
-            onClick={() => switchMode("longBreak")}
-            className={`px-4 py-2 rounded-lg ${
-              mode === "longBreak"
-                ? "bg-purple-500 text-white"
-                : "bg-gray-100 text-gray-700"
-            }`}
-          >
-            Intervalo Longo
-          </button>
-        </div>
+    <>
+      <div className={`min-h-screen flex flex-col items-center justify-center p-4 transition-colors duration-500 ${currentTheme.bg}`}>
+        <button onClick={() => setIsSettingsOpen(true)} className="absolute top-6 right-6 p-3 text-slate-500 hover:text-slate-800 hover:bg-white/80 rounded-full transition-colors">
+            <Settings />
+        </button>
 
-        <div className="w-full bg-gray-200 rounded-full h-2 mb-4">
-          <div
-            className="h-2 rounded-full transition-all"
-            style={{
-              width: `${(time / modes[mode]) * 100}%`,
-              backgroundColor: mode === "pomodoro" ? "#3b82f6" : mode === "shortBreak" ? "#10b981" : "#9333ea",
-            }}
-          />
-        </div>
+        <div className="w-full max-w-lg mx-auto text-center">
+          <header className="mb-8">
+            <div className="flex justify-center gap-2 md:gap-4 bg-white/60 p-2 rounded-full backdrop-blur-sm">
+               {Object.keys(modesInSeconds).map(m => (
+                <button key={m} onClick={() => switchMode(m)} className={`w-full px-4 py-2.5 rounded-full text-sm md:text-base font-semibold transition-all duration-300 ${mode === m ? `${currentTheme.button} text-white shadow-md` : "text-slate-500 hover:bg-white/80"}`}>
+                  {m === "pomodoro" ? "Foco" : m === "shortBreak" ? "Pausa Curta" : "Pausa Longa"}
+                </button>
+              ))}
+            </div>
+          </header>
 
+          <main className="relative w-80 h-80 md:w-96 md:h-96 mx-auto flex items-center justify-center">
+            <svg className="absolute inset-0" viewBox="0 0 300 300">
+              <circle cx="150" cy="150" r="140" fill="none" stroke={currentTheme.accentLight} strokeWidth="12" />
+              <circle cx="150" cy="150" r="140" fill="none" stroke={currentTheme.accent} strokeWidth="12" strokeDasharray={circumference} strokeDashoffset={strokeDashoffset} strokeLinecap="round" transform="rotate(-90 150 150)" style={{ transition: "stroke-dashoffset 1s linear" }}/>
+            </svg>
+            <div className="z-10">
+              <p className="h-6 text-base font-medium text-slate-600 truncate px-4">
+                {selectedTask ? `Focando em: ${selectedTask.title}` : ' '}
+              </p>
+              <div className="text-6xl md:text-7xl font-bold" style={{ color: currentTheme.accent }}>
+                {settingsLoading ? '...' : formatTime(time)}
+              </div>
+              <div className={`mt-2 text-lg font-medium ${currentTheme.text} flex items-center justify-center gap-2`}>
+                {mode === "pomodoro" ? <BrainCircuit/> : <Coffee/>}
+                <span>{cycles > 0 ? `Ciclo #${cycles + 1}` : 'Primeiro ciclo'}</span>
+              </div>
+            </div>
+          </main>
 
-        <div className="text-center mb-6">
-          <div className="text-8xl font-bold text-gray-800">
-            {formatTime(time)}
-          </div>
-          <div className="text-gray-500 mt-2">
-            Ciclos completados: {cycles}
-          </div>
-        </div>
-
-        <div className="flex justify-center gap-4">
-          {isActive ? (
-            <button
-              onClick={pauseTimer}
-              className="bg-red-500 text-white p-3 rounded-full hover:bg-red-600 transition-colors"
-            >
-              <Pause size={24} />
+          <footer className="mt-8 flex items-center justify-center gap-4">
+            <button onClick={() => { setIsActive(false); setTime(modesInSeconds[mode]); }} className="p-4 text-slate-500 hover:text-slate-800 transition-colors">
+              <RotateCcw size={24} />
             </button>
-          ) : (
-            <button
-              onClick={startTimer}
-              className="bg-blue-500 text-white p-3 rounded-full hover:bg-blue-600 transition-colors"
-            >
-              <Play size={24} />
+            <button onClick={() => setIsActive(!isActive)} className={`w-20 h-20 rounded-full text-white shadow-lg transition-all transform hover:scale-105 flex items-center justify-center ${currentTheme.button}`}>
+              {isActive ? <Pause size={36} /> : <Play size={36} className="ml-1" />}
             </button>
-          )}
-          <button
-            onClick={resetTimer}
-            className="bg-gray-100 p-3 rounded-full hover:bg-gray-200 transition-colors"
-          >
-            <RotateCcw size={24} />
-          </button>
-          <button
-            onClick={handleTimerEnd}
-            className="bg-gray-100 p-3 rounded-full hover:bg-gray-200 transition-colors"
-          >
-            <SkipForward size={24} />
-          </button>
+            <button onClick={handleTimerEnd} className="p-4 text-slate-500 hover:text-slate-800 transition-colors">
+              <SkipForward size={24} />
+            </button>
+          </footer>
+        </div>
+        <div className="w-full max-w-lg mx-auto mt-10">
+            <h3 className={`text-xl font-bold ${currentTheme.text} mb-4 px-2`}>Tarefas para Focar</h3>
+            <TaskList selectedTask={selectedTask} onSelectTask={setSelectedTask} />
         </div>
       </div>
-    </div>
+      <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} onSave={saveSettings} currentSettings={settings} />
+    </>
   );
 };
 

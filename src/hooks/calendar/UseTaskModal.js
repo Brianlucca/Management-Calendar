@@ -1,138 +1,95 @@
-import { useState, useEffect } from "react";
-import moment from "moment";
-import "moment/locale/pt-br";
+import { useState, useEffect, useCallback } from "react";
+import { format, addHours, parseISO, isValid } from 'date-fns';
 
-moment.locale("pt-br");
-
-export const useTaskModal = ({ selectedTask, selectedDate, onSubmit, onDelete, onClose }) => {
+export const useTaskModal = ({ selectedTask, selectedDate }) => {
   const [formData, setFormData] = useState({
-    title: "",
-    description: "",
-    startDate: "",
-    endDate: "",
-    tags: [],
-    location: "",
+    title: "", description: "", startDate: "", endDate: "",
+    tags: [], location: "", recurrence: { freq: 'none', until: '', byday: [] },
+    subtasks: [],
   });
 
   const [isEditMode, setIsEditMode] = useState(false);
   const [mapUrl, setMapUrl] = useState(null);
 
   useEffect(() => {
+    const defaultRecurrenceEnd = format(addHours(new Date(), 24 * 365), 'yyyy-MM-dd');
+
     if (selectedTask) {
+      const start = selectedTask.startDate && isValid(parseISO(selectedTask.startDate)) ? parseISO(selectedTask.startDate) : parseISO(selectedDate);
+      const end = selectedTask.endDate && isValid(parseISO(selectedTask.endDate)) ? parseISO(selectedTask.endDate) : addHours(start, 1);
+      
       setFormData({
-        ...selectedTask,
-        startDate: moment(selectedTask.startDate).format("YYYY-MM-DDTHH:mm"),
-        endDate: moment(selectedTask.endDate).format("YYYY-MM-DDTHH:mm"),
+        title: selectedTask.title || "",
+        description: selectedTask.description || "",
+        startDate: format(start, "yyyy-MM-dd'T'HH:mm"),
+        endDate: format(end, "yyyy-MM-dd'T'HH:mm"),
         tags: selectedTask.tags || [],
         location: selectedTask.location || "",
+        recurrence: selectedTask.recurrence || { freq: 'none', until: defaultRecurrenceEnd, byday: [] },
+        subtasks: selectedTask.subtasks || [],
       });
-      setIsEditMode(false);
+      setIsEditMode(!selectedTask.id);
     } else {
-      const defaultDate = selectedDate ? moment(selectedDate) : moment();
+      const defaultDate = selectedDate && isValid(parseISO(selectedDate)) ? parseISO(selectedDate) : new Date();
       setFormData({
-        title: "",
-        description: "",
-        startDate: defaultDate.format("YYYY-MM-DDTHH:mm"),
-        endDate: defaultDate.add(1, "hour").format("YYYY-MM-DDTHH:mm"),
-        tags: [],
-        location: "",
+        title: "", description: "",
+        startDate: format(defaultDate, "yyyy-MM-dd'T'HH:mm"),
+        endDate: format(addHours(defaultDate, 1), "yyyy-MM-dd'T'HH:mm"),
+        tags: [], location: "",
+        recurrence: { freq: 'none', until: defaultRecurrenceEnd, byday: [] },
+        subtasks: [],
       });
       setIsEditMode(true);
     }
   }, [selectedTask, selectedDate]);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-
-    if (!formData.title.trim()) {
-      alert("O título é obrigatório!");
-      return;
-    }
-
-    const startMoment = moment(formData.startDate);
-    const endMoment = moment(formData.endDate);
-
-    if (endMoment.isBefore(startMoment)) {
-      alert("A data/hora de término deve ser posterior à de início!");
-      return;
-    }
-
-    const taskData = {
-      ...formData,
-      startDate: startMoment.toISOString(),
-      endDate: endMoment.toISOString(),
-    };
-
-    onSubmit(taskData);
-  };
-
-  const handleDelete = async () => {
-    await onDelete(selectedTask.id);
-    onClose();
-  };
-  
-  const getCoordinates = async (location) => {
+  const getMapUrl = useCallback(async (location) => {
     if (!location) return null;
-  
     try {
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(location)}`
-      );
+      const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(location)}`);
       const data = await response.json();
-  
       if (data && data.length > 0) {
         const { lat, lon } = data[0];
-        return { lat: parseFloat(lat), lon: parseFloat(lon) };
+        return `https://www.openstreetmap.org/export/embed.html?bbox=${parseFloat(lon) - 0.01},${parseFloat(lat) - 0.01},${parseFloat(lon) + 0.01},${parseFloat(lat) + 0.01}&layer=mapnik`;
       }
       return null;
     } catch (error) {
       return null;
     }
-  };
-
-  const getMapUrl = async (location) => {
-    try {
-      if (!location) return null;
-
-      const coordMatch = location.match(/(-?\d+\.\d+),\s*(-?\d+\.\d+)/);
-      if (coordMatch) {
-        const lat = parseFloat(coordMatch[1]);
-        const lng = parseFloat(coordMatch[2]);
-        return `https://www.openstreetmap.org/export/embed.html?bbox=${lng - 0.01},${lat - 0.01},${lng + 0.01},${lat + 0.01}&layer=mapnik`;
-      }
-
-      const coordinates = await getCoordinates(location);
-      if (coordinates) {
-        const { lat, lon } = coordinates;
-        return `https://www.openstreetmap.org/export/embed.html?bbox=${lon - 0.01},${lat - 0.01},${lon + 0.01},${lat + 0.01}&layer=mapnik`;
-      }
-
-      return null;
-    } catch (error) {
-      return null;
-    }
-  };
+  }, []);
 
   useEffect(() => {
     const updateMapUrl = async () => {
-      if (formData.location) {
-        const url = await getMapUrl(formData.location);
-        setMapUrl(url);
-      } else {
-        setMapUrl(null);
-      }
+      setMapUrl(formData.location ? await getMapUrl(formData.location) : null);
     };
-
     updateMapUrl();
-  }, [formData.location]);
+  }, [formData.location, getMapUrl]);
+
+  const addSubtask = () => {
+    const newSubtask = { id: Date.now().toString(), text: '', completed: false };
+    setFormData(prev => ({ ...prev, subtasks: [...prev.subtasks, newSubtask] }));
+  };
+
+  const updateSubtask = (id, newText) => {
+    setFormData(prev => ({
+      ...prev,
+      subtasks: prev.subtasks.map(task => task.id === id ? { ...task, text: newText } : task)
+    }));
+  };
+
+  const toggleSubtask = (id) => {
+    setFormData(prev => ({
+      ...prev,
+      subtasks: prev.subtasks.map(task => task.id === id ? { ...task, completed: !task.completed } : task)
+    }));
+  };
+
+  const deleteSubtask = (id) => {
+    setFormData(prev => ({ ...prev, subtasks: prev.subtasks.filter(task => task.id !== id) }));
+  };
 
   return {
-    formData,
-    setFormData,
-    isEditMode,
-    setIsEditMode,
-    handleSubmit,
-    handleDelete,
-    mapUrl,
+    formData, setFormData, isEditMode, setIsEditMode, mapUrl,
+    addSubtask, updateSubtask, toggleSubtask, deleteSubtask
   };
 };

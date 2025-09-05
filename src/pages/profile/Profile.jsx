@@ -1,15 +1,21 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
-import { sendPasswordResetEmail } from "firebase/auth";
-import { auth, firestore } from "../../service/FirebaseConfig";
-import { doc, getDoc } from "firebase/firestore";
+import { sendPasswordResetEmail, deleteUser } from "firebase/auth";
+import { auth, firestore, db as realtimeDB } from "../../service/FirebaseConfig";
+import { doc, getDoc, deleteDoc } from "firebase/firestore";
+import { ref, remove } from "firebase/database";
 import { useNotification } from "../../components/notification/Notification";
+import { User, KeyRound, AlertTriangle } from "lucide-react";
+import moment from "moment";
+import "moment/locale/pt-br";
+
+moment.locale('pt-br');
 
 const Profile = () => {
   const { currentUser } = useAuth();
   const [userData, setUserData] = useState(null);
-  const [email, setEmail] = useState("");
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isResetModalOpen, setIsResetModalOpen] = useState(false);
+  const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const { showNotification } = useNotification();
 
   useEffect(() => {
@@ -20,75 +26,161 @@ const Profile = () => {
           const userSnap = await getDoc(userRef);
           if (userSnap.exists()) {
             setUserData(userSnap.data());
-          } else {
-            showNotification(`Informação não encontrada, fale com o suporte.`, "error");
           }
         } catch (error) {
-          showNotification("Erro ao buscar dados do usuário, fale com o suporte", "error");
+          showNotification("Erro ao buscar dados do usuário.", "error");
         }
       }
     };
     fetchUserData();
-  }, [currentUser]);
+  }, [currentUser, showNotification]);
 
-  const handlePasswordReset = async (e) => {
-    e.preventDefault();
+  const handlePasswordReset = async () => {
     try {
-      await sendPasswordResetEmail(auth, email);
-      showNotification("E-mail de redefinição de senha enviado com sucesso!", "success");
-      setIsModalOpen(false);
+      await sendPasswordResetEmail(auth, currentUser.email);
+      showNotification("E-mail de redefinição de senha enviado!", "success");
+      setIsResetModalOpen(false);
     } catch (error) {
-      showNotification("Erro ao enviar e-mail", "error");
+      showNotification("Erro ao enviar e-mail de redefinição.", "error");
     }
   };
 
-  return (
-    <div className="max-w-md mx-auto md:mt-10 mt-20 p-6 m-56 rounded-xl shadow-lg border">
-      <h2 className="text-2xl font-semibold text-gray-800 mb-4">Perfil do Usuário</h2>
-      <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-700">Nome</label>
-        <p className="mt-1 text-gray-900">{userData ? userData.name : "Carregando..."}</p>
-      </div>
-      <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-700">Email</label>
-        <p className="mt-1 text-gray-900">{currentUser.email}</p>
-      </div>
-      <button
-        onClick={() => setIsModalOpen(true)}
-        className="w-full bg-blue-500 text-white p-2 rounded-lg hover:bg-blue-600 transition-colors"
-      >
-        Redefinir Senha
-      </button>
+  const handleDeleteAccount = async () => {
+    if (!currentUser) return;
+    const uid = currentUser.uid;
+    try {
+      const firestoreDocRef = doc(firestore, "users", uid);
+      const realtimeDbRef = ref(realtimeDB, `users/${uid}`);
+      await Promise.all([
+        deleteDoc(firestoreDocRef),
+        remove(realtimeDbRef)
+      ]);
+      await deleteUser(currentUser);
+      showNotification("Sua conta e todos os seus dados foram excluídos com sucesso.", "success");
+    } catch (error) {
+      if (error.code === 'auth/requires-recent-login') {
+        showNotification("Por segurança, faça login novamente antes de excluir sua conta.", "error");
+      } else {
+        console.error("Erro detalhado ao excluir conta:", error);
+        showNotification("Ocorreu um erro ao excluir a conta. Tente novamente.", "error");
+      }
+    } finally {
+      setIsDeleteModalOpen(false);
+    }
+  };
 
-      {isModalOpen && (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
-          <div className="bg-white p-6 rounded-lg shadow-lg max-w-sm w-full">
-            <h3 className="text-lg font-semibold mb-4">Redefinir Senha</h3>
-            <form onSubmit={handlePasswordReset}>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Digite seu e-mail"
-                className="w-full p-2 border rounded-md mb-4"
-                required
+  const getInitials = (name) => {
+    if (!name) return "";
+    const names = name.split(' ');
+    const initials = names.map(n => n[0]).join('');
+    return initials.slice(0, 2).toUpperCase();
+  };
+
+  return (
+    <div className="p-4 sm:p-6 lg:p-8">
+      <header className="mb-8">
+        <h1 className="text-3xl md:text-4xl font-bold text-slate-900 tracking-tight">
+          Meu Perfil
+        </h1>
+        <p className="mt-2 text-lg text-slate-600">
+          Gerencie suas informações e configurações de conta.
+        </p>
+      </header>
+      
+      <div className="max-w-2xl">
+        <div className="bg-white rounded-2xl shadow-lg border border-slate-200/70 p-6 lg:p-8">
+          <div className="flex items-center gap-5 mb-8">
+            {currentUser?.photoURL ? (
+              <img
+                src={currentUser.photoURL}
+                alt="Foto do perfil"
+                className="w-20 h-20 rounded-full object-cover border-4 border-slate-100"
               />
-              <div className="flex justify-end space-x-2">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="bg-gray-400 text-white p-2 rounded-lg hover:bg-gray-500"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  className="bg-blue-500 text-white p-2 rounded-lg hover:bg-blue-600"
-                >
-                  Enviar
-                </button>
+            ) : (
+              <div className="w-20 h-20 flex items-center justify-center rounded-full bg-indigo-500 text-white text-3xl font-bold border-4 border-slate-100">
+                {userData ? getInitials(userData.name) : <User />}
               </div>
-            </form>
+            )}
+            <div>
+              <h2 className="text-3xl font-bold text-slate-800">
+                {userData ? userData.name : "Carregando..."}
+              </h2>
+              <p className="text-slate-500">{currentUser?.email}</p>
+            </div>
+          </div>
+
+          <dl className="space-y-4">
+            <div className="flex justify-between items-center">
+              <dt className="text-sm font-medium text-slate-500">Membro desde</dt>
+              <dd className="text-sm text-slate-700 font-semibold">
+                {currentUser ? moment(currentUser.metadata.creationTime).format("D [de] MMMM [de] YYYY") : "..."}
+              </dd>
+            </div>
+          </dl>
+          
+          <hr className="my-8 border-slate-200" />
+          
+          <div>
+            <h3 className="text-lg font-bold text-slate-800">Segurança</h3>
+            <div className="mt-4 flex flex-col sm:flex-row justify-between items-center p-4 bg-slate-50 rounded-lg border border-slate-200">
+              <p className="text-sm text-slate-600 mb-2 sm:mb-0">Deseja alterar sua senha?</p>
+              <button
+                onClick={() => setIsResetModalOpen(true)}
+                className="w-full sm:w-auto flex items-center justify-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-colors shadow-sm"
+              >
+                <KeyRound className="w-4 h-4" />
+                Redefinir Senha
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-8">
+           <h3 className="text-lg font-bold text-red-700">Zona de Perigo</h3>
+           <div className="mt-4 p-4 bg-white rounded-2xl shadow-lg border border-red-200 flex flex-col sm:flex-row justify-between items-center">
+              <div className="mb-4 sm:mb-0">
+                <h4 className="font-semibold text-slate-800">Excluir sua conta</h4>
+                <p className="text-sm text-slate-600 max-w-md">Esta ação é permanente e todos os seus dados serão removidos. Não será possível reverter.</p>
+              </div>
+              <button
+                onClick={() => setIsDeleteModalOpen(true)}
+                className="w-full sm:w-auto px-4 py-2 text-sm font-semibold text-red-600 bg-red-100 rounded-lg hover:bg-red-200 hover:text-red-700 transition-colors"
+              >
+                Excluir Conta
+              </button>
+           </div>
+        </div>
+      </div>
+      
+      {isResetModalOpen && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6">
+            <h3 className="text-xl font-bold text-slate-800">Redefinir Senha</h3>
+            <p className="text-slate-500 mt-2">
+              Enviaremos um link de redefinição para o seu e-mail: <strong>{currentUser?.email}</strong>
+            </p>
+            <div className="flex justify-end gap-4 mt-8">
+              <button onClick={() => setIsResetModalOpen(false)} className="px-6 py-2.5 text-sm font-semibold text-slate-700 bg-slate-100 rounded-lg hover:bg-slate-200 transition-all">Cancelar</button>
+              <button onClick={handlePasswordReset} className="px-6 py-2.5 text-sm font-semibold text-white bg-indigo-600 rounded-lg hover:bg-indigo-700 transition-all">Enviar Link</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isDeleteModalOpen && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 text-center">
+            <div className="mx-auto w-12 h-12 flex items-center justify-center rounded-full bg-red-100 mb-4">
+              <AlertTriangle className="w-6 h-6 text-red-600" />
+            </div>
+            <h3 className="text-xl font-bold text-slate-800">Excluir Conta Permanentemente</h3>
+            <p className="text-slate-500 mt-2">
+              Tem certeza absoluta? Todos os seus dados, incluindo tarefas e tags, serão perdidos para sempre.
+            </p>
+            <div className="flex justify-center gap-4 mt-8">
+              <button onClick={() => setIsDeleteModalOpen(false)} className="px-6 py-2.5 text-sm font-semibold text-slate-700 bg-slate-100 rounded-lg hover:bg-slate-200 transition-all">Cancelar</button>
+              <button onClick={handleDeleteAccount} className="px-6 py-2.5 text-sm font-semibold text-white bg-red-600 rounded-lg hover:bg-red-700 transition-all">Sim, Excluir Minha Conta</button>
+            </div>
           </div>
         </div>
       )}

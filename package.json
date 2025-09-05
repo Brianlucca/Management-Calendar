@@ -15,6 +15,9 @@
     "@fullcalendar/list": "^6.1.15",
     "@fullcalendar/react": "^6.1.15",
     "@fullcalendar/timegrid": "^6.1.15",
+    "@heroicons/react": "^2.2.0",
+    "@popperjs/core": "^2.11.8",
+    "date-fns": "^4.1.0",
     "firebase": "^11.2.0",
     "flowbite": "^3.1.1",
     "fullcalendar": "^6.1.15",
@@ -22,7 +25,10 @@
     "lucide-react": "^0.475.0",
     "moment": "^2.30.1",
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "react-popper": "^2.3.0",
+    "recharts": "^3.1.2",
+    "rrule": "^2.8.1"
   },
   "devDependencies": {
     "@eslint/js": "^9.17.0",

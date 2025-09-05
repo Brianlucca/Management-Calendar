@@ -2,16 +2,14 @@ import React, { useState } from "react";
 import { ref, push } from "firebase/database";
 import { db } from "../../service/FirebaseConfig";
 import { useAuth } from "../../context/AuthContext";
-import { PlusCircle } from "lucide-react";
-import { useNotification } from "../notification/Notification"; 
-
+import { Tag } from "lucide-react";
+import { useNotification } from "../notification/Notification";
 
 const TagsManager = ({ onTagCreate }) => {
   const [tagName, setTagName] = useState("");
-  const [tagColor, setTagColor] = useState("#3B82F6");
+  const [tagColor, setTagColor] = useState("#4f46e5");
   const { currentUser } = useAuth();
   const { showNotification } = useNotification();
-  
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -21,14 +19,14 @@ const TagsManager = ({ onTagCreate }) => {
         color: tagColor,
         createdAt: new Date().toISOString(),
       };
-  
+
       try {
         const tagRef = await push(ref(db, `users/${currentUser.uid}/tags`), newTag);
-        onTagCreate({ ...newTag, id: tagRef.key });
+        if (onTagCreate) {
+          onTagCreate({ ...newTag, id: tagRef.key });
+        }
         setTagName("");
-  
         showNotification("Tag criada com sucesso!", "success");
-  
       } catch (error) {
         showNotification("Erro ao salvar tag", "error");
       }
@@ -36,41 +34,45 @@ const TagsManager = ({ onTagCreate }) => {
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6">
-      <div className="mb-6">
-        <h2 className="text-2xl font-semibold text-gray-800 flex items-center gap-2">
-          <PlusCircle className="w-6 h-6" />
+    <div className="bg-white rounded-2xl shadow-lg border border-slate-200/70 p-6 lg:p-8 h-fit">
+      <header className="mb-6">
+        <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-3">
+          <Tag className="w-6 h-6 text-indigo-500" />
           Criar Nova Tag
         </h2>
-      </div>
+        <p className="text-slate-500 mt-1">Adicione uma nova tag para organizar seus eventos.</p>
+      </header>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-5">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label htmlFor="tagName" className="block text-sm font-semibold text-slate-700 mb-1.5">
             Nome da Tag
           </label>
           <input
+            id="tagName"
             type="text"
             value={tagName}
             onChange={(e) => setTagName(e.target.value)}
-            className="w-full px-4 py-2.5 rounded-lg border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all"
-            placeholder="Digite o nome da tag"
+            className="w-full px-4 py-2.5 bg-slate-100 border border-slate-200 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition"
+            placeholder="Ex: Trabalho"
             required
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Selecione a Cor
+          <label className="block text-sm font-semibold text-slate-700 mb-1.5">
+            Cor
           </label>
           <div className="flex items-center gap-4">
-            <input
-              type="color"
-              value={tagColor}
-              onChange={(e) => setTagColor(e.target.value)}
-              className="w-16 h-10 rounded-lg cursor-pointer"
-            />
-            <span className="text-sm text-gray-600">
+            <div className="relative w-12 h-12 rounded-lg overflow-hidden border-2 border-slate-200">
+              <input
+                type="color"
+                value={tagColor}
+                onChange={(e) => setTagColor(e.target.value)}
+                className="absolute inset-0 w-full h-full cursor-pointer border-none"
+              />
+            </div>
+            <span className="text-base font-mono text-slate-600 bg-slate-100 px-3 py-1 rounded">
               {tagColor.toUpperCase()}
             </span>
           </div>
@@ -78,9 +80,9 @@ const TagsManager = ({ onTagCreate }) => {
 
         <button
           type="submit"
-          className="w-full mt-4 px-6 py-3 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 transition-colors"
+          className="w-full mt-4 px-6 py-3 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition-colors shadow-sm hover:shadow-md shadow-indigo-500/20"
         >
-          Criar Nova Tag
+          Criar Tag
         </button>
       </form>
     </div>
